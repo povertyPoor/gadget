@@ -1,0 +1,19 @@
+.cssPage {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  .content {
+    margin-bottom: 10px;
+    width: 400px;
+    height: 200px;
+    line-height: 200px;
+    text-align: center;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+    cursor: pointer;
+  }
+  .box{
+    position: absolute;
+    background: #fff;
+    transition: all 1s;
+  }
+}
