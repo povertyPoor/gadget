@@ -29,6 +29,18 @@ export const constantRoutes = [
         meta: { title: 'Css' }
       }
     ]
+  },
+  {
+    path: '/3DECharts',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: '3DECharts',
+        component: () => import('@/views/3DECharts/index'),
+        meta: { title: '3DECharts' }
+      }
+    ]
   }
 ]
 
