@@ -31,14 +31,26 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/3DECharts',
+    path: '/ECharts',
     component: Layout,
     children: [
       {
         path: '',
-        name: '3DECharts',
-        component: () => import('@/views/3DECharts/index'),
-        meta: { title: '3DECharts' }
+        name: 'ECharts',
+        component: () => import('@/views/ECharts/index'),
+        meta: { title: 'ECharts' }
+      }
+    ]
+  },
+  {
+    path: '/DeepSeek',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'DeepSeek',
+        component: () => import('@/views/DeepSeek/index'),
+        meta: { title: 'DeepSeek' }
       }
     ]
   }

@@ -46,6 +46,29 @@ module.exports = {
       alias: {
         '@': resolve('src')
       }
+    },
+    module: {
+      rules: [
+        {
+          test: /\.js$/,
+          include: [
+            resolve('src'),
+            resolve('node_modules/openai')
+          ],
+          use: {
+            loader: 'babel-loader',
+            options: {
+              presets: [
+                ['@babel/preset-env', { 
+                  targets: { 
+                    node: 'current' 
+                  } 
+                }]
+              ]
+            }
+          }
+        }
+      ]
     }
   },
   chainWebpack(config) {
