@@ -205,10 +205,6 @@ export default {
   }
 
   .custom-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     width: 50%;
     min-width: 300px;
     max-width: 800px;
@@ -238,7 +234,6 @@ export default {
     padding: 10px;
     border: 1px solid #ebeef5;
     border-radius: 4px;
-    margin-bottom: 20px;
 
     .message {
       margin: 10px 0;
@@ -291,10 +286,6 @@ export default {
         margin-right: 5px;
       }
     }
-  }
-
-  .input-area {
-    margin-top: 20px;
   }
 }
 </style>
