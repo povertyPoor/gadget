@@ -25,8 +25,11 @@
           :key="index"
           :class="['message', msg.role]"
         >
-          <div class="message-content">
-            {{ msg.content }}
+          <div v-if="msg.role === 'assistant'">
+            <div
+              class="message-content"
+              :id="'markdown-content-' + index"
+            ></div>
             <span
               v-if="
                 msg.role === 'assistant' &&
@@ -36,30 +39,41 @@
               class="cursor"
             ></span>
           </div>
+          <div v-else class="message-content">
+            {{ msg.content }}
+          </div>
         </div>
 
         <div v-if="loading" class="loading">
-          <el-icon class="is-loading"><Loading /></el-icon>
+          <span class="el-icon-loading"></span>
           思考中...
         </div>
       </div>
 
       <div class="input-area">
         <el-input
+          type="textarea"
+          :rows="2"
           v-model="inputMessage"
           placeholder="请输入您的问题"
           @keyup.enter.native="sendMessage"
           :disabled="loading"
         >
+        </el-input>
+        <div class="operate">
+          <div>
+            <i class="el-icon el-icon-picture-outline"></i>
+            <i class="el-icon el-icon-paperclip"></i>
+          </div>
           <el-button
             slot="append"
-            icon="el-icon-s-promotion"
+            icon="el-icon-top"
             @click="sendMessage"
+            circle
             :disabled="loading || !inputMessage"
           >
-            发送
           </el-button>
-        </el-input>
+        </div>
       </div>
     </div>
   </div>
@@ -67,7 +81,7 @@
 
 <script>
 import OpenAI from "openai";
-
+import marked from "marked";
 export default {
   data() {
     return {
@@ -76,15 +90,25 @@ export default {
       histories: [],
       loading: false,
       openai: null,
-      controller: null,
     };
+  },
+  watch: {
+    messages: {
+      handler() {
+        this.$nextTick(() => {
+          const container = this.$el.querySelector(".chat-window");
+          container.scrollTop = container.scrollHeight;
+        });
+      },
+      deep: true,
+    },
   },
   created() {
     this.openai = new OpenAI({
       baseURL:
         process.env.VUE_APP_DEEPSEEK_API_URL || "https://api.deepseek.com",
       apiKey: process.env.VUE_APP_DEEPSEEK_API_KEY,
-      dangerouslyAllowBrowser: true,
+      dangerouslyAllowBrowser: true, // 允许在浏览器环境中使用OpenAI
     });
   },
   methods: {
@@ -108,27 +132,20 @@ export default {
         content: this.inputMessage,
       });
 
-      const userMessage = this.inputMessage;
       this.inputMessage = "";
       this.loading = true;
 
       try {
-        const completion = await this.openai.chat.completions.create(
-          {
-            messages: [
-              { role: "system", content: "你是一个乐于助人的AI助手" },
-              ...this.messages.map((msg) => ({
-                role: msg.role,
-                content: msg.content,
-              })),
-            ],
-            model: "deepseek-chat",
-            stream: true,
-          },
-          {
-            signal: this.controller?.signal,
-          }
-        );
+        const completion = await this.openai.chat.completions.create({
+          messages: [
+            ...this.messages.map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+          ],
+          model: "deepseek-chat",
+          stream: true,
+        });
 
         let assistantMessage = "";
         this.messages.push({
@@ -140,6 +157,10 @@ export default {
           const content = chunk.choices[0]?.delta?.content || "";
           assistantMessage += content;
           this.messages[this.messages.length - 1].content = assistantMessage;
+          const htmlContent = marked.parse(assistantMessage);
+          document.getElementById(
+            `markdown-content-${this.messages.length - 1}`
+          ).innerHTML = htmlContent;
         }
       } catch (error) {
         this.$message.error("请求失败：" + error.message);
@@ -209,7 +230,7 @@ export default {
     min-width: 300px;
     max-width: 800px;
     background: white;
-    border-radius: 4px;
+    border-radius: 24px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     z-index: 2000;
 
@@ -232,7 +253,6 @@ export default {
     height: 400px;
     overflow-y: auto;
     padding: 10px;
-    border: 1px solid #ebeef5;
     border-radius: 4px;
 
     .message {
@@ -269,7 +289,7 @@ export default {
         .cursor {
           display: inline-block;
           width: 2px;
-          height: 1em;
+          height: 20px;
           background: #333;
           margin-left: 2px;
           animation: blink 1s infinite;
@@ -284,6 +304,45 @@ export default {
 
       .el-icon {
         margin-right: 5px;
+      }
+    }
+  }
+
+  ::v-deep .input-area {
+    background-color: rgb(243, 244, 246);
+    box-shadow: 0px 0px 0px 0.5px #dce0e9;
+    border-radius: 24px;
+    .el-textarea__inner {
+      padding: 10px 15px;
+      resize: none;
+      border-color: transparent;
+      background-color: transparent;
+      &:focus,
+      &:hover {
+        border-color: transparent;
+      }
+    }
+    .operate {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 15px;
+      font-size: 22px;
+      .el-icon {
+        margin: 0 5px;
+        cursor: pointer;
+      }
+      .el-button {
+        padding: 6px;
+        font-size: 22px !important;
+        color: #fff;
+        background: #4d6bfe;
+      }
+      .el-button.is-disabled,
+      .el-button.is-disabled:focus,
+      .el-button.is-disabled:hover {
+        color: #c0c4cc;
+        background-color: #fff;
       }
     }
   }

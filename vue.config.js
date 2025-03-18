@@ -53,16 +53,35 @@ module.exports = {
           test: /\.js$/,
           include: [
             resolve('src'),
-            resolve('node_modules/openai')
+            resolve('node_modules/openai'),
+            resolve('node_modules/marked')
           ],
           use: {
             loader: 'babel-loader',
             options: {
               presets: [
-                ['@babel/preset-env', { 
-                  targets: { 
-                    node: 'current' 
-                  } 
+                ['@babel/preset-env', {
+                  targets: {
+                    node: 'current'
+                  }
+                }]
+              ]
+            }
+          }
+        },
+        {
+          test: /\.umd\.js$/,
+          include: [
+            resolve('node_modules/marked')
+          ],
+          use: {
+            loader: 'babel-loader',
+            options: {
+              presets: [
+                ['@babel/preset-env', {
+                  targets: {
+                    node: 'current'
+                  }
                 }]
               ]
             }
