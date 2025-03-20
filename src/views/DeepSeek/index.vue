@@ -63,9 +63,22 @@
         >
         </el-input>
         <div class="operate">
-          <div>
+          <div style="display: flex">
             <i class="el-icon el-icon-picture-outline"></i>
-            <i class="el-icon el-icon-paperclip"></i>
+            <el-upload
+              class="upload-demo"
+              action="http://api.deepseek.com/v1/file/recognize"
+              :headers="uploadHeaders"
+              :on-preview="handlePreview"
+              :on-remove="handleRemove"
+              :before-remove="beforeRemove"
+              multiple
+              :limit="3"
+              :on-exceed="handleExceed"
+              :file-list="fileList"
+            >
+              <i class="el-icon el-icon-paperclip"></i>
+            </el-upload>
           </div>
           <el-button
             slot="append"
@@ -92,6 +105,11 @@ export default {
       histories: [],
       loading: false,
       openai: null,
+      fileList: [],
+      uploadHeaders: {
+        Authorization: "Bearer sk-8bf0406f418d4f45bfc6483a6a3aca14", // 认证信息
+        "Content-Type": "application/json",
+      },
     };
   },
   watch: {
@@ -114,6 +132,23 @@ export default {
     });
   },
   methods: {
+    handleRemove(file, fileList) {
+      console.log(file, fileList);
+    },
+    handlePreview(file) {
+      console.log(file);
+    },
+    handleExceed(files, fileList) {
+      this.$message.warning(
+        `当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${
+          files.length + fileList.length
+        } 个文件`
+      );
+    },
+    beforeRemove(file, fileList) {
+      return this.$confirm(`确定移除 ${file.name}？`);
+    },
+    // 保存对话
     saveHistory() {
       if (this.messages.length > 0) {
         const title = this.messages[0].content.substring(0, 20) + "...";
@@ -123,9 +158,11 @@ export default {
         });
       }
     },
+    // 打开新对话
     newDialogue() {
       this.messages = [];
     },
+    // 查看历史对话
     loadHistory(history) {
       this.messages = [...history.messages];
       this.$nextTick(() => {
@@ -356,6 +393,25 @@ export default {
       .el-button.is-disabled:hover {
         color: #c0c4cc;
         background-color: #fff;
+      }
+    }
+  }
+  ::v-deep .el-upload {
+    &:focus {
+      border-color: #000;
+      color: #000;
+    }
+    .el-upload-list {
+      display: flex;
+      align-items: center;
+      position: absolute;
+      left: 240px;
+      bottom: 140px;
+      .el-upload-list__item {
+        background-color: #f5f7fa;
+        &:first-child {
+          margin-top: unset;
+        }
       }
     }
   }
