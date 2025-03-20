@@ -63,3 +63,8 @@ div:focus {
 .app-container {
   padding: 20px;
 }
+
+.message-content p {
+  margin-block-start: 0 !important;
+  margin-block-end: 0 !important;
+}

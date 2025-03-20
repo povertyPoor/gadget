@@ -1,8 +1,13 @@
 <template>
   <div class="chat-container">
-    <div class="history-panel">
+    <div class="function-panel">
+      <div class="new-dialogue" @click="newDialogue">
+        <span class="el-icon el-icon-chat-dot-round"></span>
+        <span>开启新对话</span>
+      </div>
       <div class="history-header">
-        <span>历史记录</span>
+        <span class="el-icon el-icon-chat-dot-round"></span>
+        <span>最近对话</span>
       </div>
       <div class="history-list">
         <div
@@ -16,9 +21,6 @@
       </div>
     </div>
     <div class="custom-dialog">
-      <div class="dialog-header">
-        <span>AI 对话</span>
-      </div>
       <div class="chat-window">
         <div
           v-for="(msg, index) in messages"
@@ -121,8 +123,20 @@ export default {
         });
       }
     },
+    newDialogue() {
+      this.messages = [];
+    },
     loadHistory(history) {
-      this.messages = history.messages;
+      this.messages = [...history.messages];
+      this.$nextTick(() => {
+        history.messages.forEach((item, index) => {
+          if (item.role == "assistant") {
+            const htmlContent = marked.parse(item.content);
+            document.getElementById(`markdown-content-${index}`).innerHTML =
+              htmlContent;
+          }
+        });
+      });
     },
     async sendMessage() {
       if (!this.inputMessage.trim()) return;
@@ -187,25 +201,40 @@ export default {
 }
 
 .chat-container {
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-  position: relative;
   display: flex;
-  gap: 20px;
   align-items: flex-start;
+  position: relative;
+  margin: 0 auto;
+  padding: 20px;
+  width: 80%;
+  height: 100%;
+  gap: 20px;
+  border-radius: 24px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 
-  .history-panel {
+  .function-panel {
+    height: 690px;
     width: 200px;
-    background: white;
-    border-radius: 4px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 
-    .history-header {
+    .history-header,
+    .new-dialogue {
+      display: flex;
+      align-items: center;
       padding: 15px;
-      border-bottom: 1px solid #ebeef5;
       font-size: 14px;
       font-weight: bold;
+    }
+
+    .new-dialogue {
+      background-color: rgb(219, 234, 254);
+      border-radius: 12px;
+      color: #4d6bfe;
+      cursor: pointer;
+    }
+
+    .el-icon {
+      margin-right: 10px;
+      font-size: 25px;
     }
 
     .history-list {
@@ -226,31 +255,15 @@ export default {
   }
 
   .custom-dialog {
-    width: 50%;
+    width: 75%;
     min-width: 300px;
     max-width: 800px;
     background: white;
-    border-radius: 24px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     z-index: 2000;
-
-    .dialog-header {
-      padding: 15px 20px;
-      border-bottom: 1px solid #ebeef5;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 16px;
-      font-weight: bold;
-
-      .el-button {
-        padding: 0;
-      }
-    }
   }
 
   .chat-window {
-    height: 400px;
+    height: 580px;
     overflow-y: auto;
     padding: 10px;
     border-radius: 4px;
