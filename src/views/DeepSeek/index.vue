@@ -1,83 +1,83 @@
 <template>
-  <div class="chat-container">
-    <div id="floating-ball">
-      <span>悬浮球</span>
-    </div>
-    <div class="function-panel">
-      <div class="new-dialogue" @click="newDialogue">
-        <span class="el-icon el-icon-chat-dot-round"></span>
-        <span>开启新对话</span>
-      </div>
-      <div class="history-header">
-        <span class="el-icon el-icon-chat-dot-round"></span>
-        <span>最近对话</span>
-      </div>
-      <div class="history-list">
-        <div
-          v-for="(history, index) in histories"
-          :key="index"
-          class="history-item"
-          @click="loadHistory(history)"
-        >
-          {{ history.title }}
+  <div class="deepSeek">
+    <div id="floating-ball"></div>
+    <div class="chat-container">
+      <div class="function-panel">
+        <div class="new-dialogue" @click="newDialogue">
+          <span class="el-icon el-icon-chat-dot-round"></span>
+          <span>开启新对话</span>
         </div>
-      </div>
-    </div>
-    <div class="custom-dialog">
-      <div class="chat-window">
-        <div
-          v-for="(msg, index) in messages"
-          :key="index"
-          :class="['message', msg.role]"
-        >
-          <div v-if="msg.role === 'assistant'">
-            <div
-              class="message-content"
-              :id="'markdown-content-' + index"
-            ></div>
-            <span
-              v-if="
-                msg.role === 'assistant' &&
-                loading &&
-                index === messages.length - 1
-              "
-              class="cursor"
-            ></span>
-          </div>
-          <div v-else class="message-content">
-            {{ msg.content }}
-          </div>
+        <div class="history-header">
+          <span class="el-icon el-icon-chat-dot-round"></span>
+          <span>最近对话</span>
         </div>
-
-        <div v-if="loading" class="loading">
-          <span class="el-icon-loading"></span>
-          思考中...
-        </div>
-      </div>
-
-      <div class="input-area">
-        <el-input
-          type="textarea"
-          :rows="2"
-          v-model="inputMessage"
-          placeholder="请输入您的问题"
-          @keyup.enter.native="sendMessage"
-          :disabled="loading"
-        >
-        </el-input>
-        <div class="operate">
-          <div style="display: flex">
-            <i class="el-icon el-icon-picture-outline"></i>
-            <i class="el-icon el-icon-paperclip"></i>
-          </div>
-          <el-button
-            slot="append"
-            icon="el-icon-top"
-            @click="sendMessage"
-            circle
-            :disabled="loading || !inputMessage"
+        <div class="history-list">
+          <div
+            v-for="(history, index) in histories"
+            :key="index"
+            class="history-item"
+            @click="loadHistory(history)"
           >
-          </el-button>
+            {{ history.title }}
+          </div>
+        </div>
+      </div>
+      <div class="custom-dialog">
+        <div class="chat-window">
+          <div
+            v-for="(msg, index) in messages"
+            :key="index"
+            :class="['message', msg.role]"
+          >
+            <div v-if="msg.role === 'assistant'">
+              <div
+                class="message-content"
+                :id="'markdown-content-' + index"
+              ></div>
+              <span
+                v-if="
+                  msg.role === 'assistant' &&
+                  loading &&
+                  index === messages.length - 1
+                "
+                class="cursor"
+              ></span>
+            </div>
+            <div v-else class="message-content">
+              {{ msg.content }}
+            </div>
+          </div>
+
+          <div v-if="loading" class="loading">
+            <span class="el-icon-loading"></span>
+            思考中...
+          </div>
+        </div>
+
+        <div class="input-area">
+          <el-input
+            type="textarea"
+            :rows="2"
+            v-model="inputMessage"
+            placeholder="请输入您的问题"
+            @keyup.enter.native="sendMessage"
+            :disabled="loading"
+          >
+          </el-input>
+          <div class="operate">
+            <div style="display: flex">
+              <i class="el-icon el-icon-picture-outline"></i>
+              <i class="el-icon el-icon-paperclip"></i>
+            </div>
+            <el-button
+              slot="append"
+              icon="el-icon-top"
+              @click="sendMessage"
+              circle
+              :disabled="loading || !inputMessage"
+            >
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -95,7 +95,7 @@ export default {
       histories: [],
       loading: false,
       openai: null,
-      isDragging: false,
+      isDragging: false, // 鼠标是否点击悬浮球
       offsetX: null,
       offsetY: null,
     };
@@ -131,10 +131,17 @@ export default {
         this.isDragging = true;
         this.offsetX = e.clientX - floatingBall.offsetLeft;
         this.offsetY = e.clientY - floatingBall.offsetTop;
+      });
+
+      floatingBall.addEventListener("mouseenter", (e) => {
         floatingBall.classList.add("dragging");
       });
 
-      floatingBall.addEventListener("mousemove", (e) => {
+      floatingBall.addEventListener("mouseleave", (e) => {
+        floatingBall.classList.remove("dragging");
+      });
+
+      document.addEventListener("mousemove", (e) => {
         if (this.isDragging) {
           let x = e.clientX - this.offsetX;
           let y = e.clientY - this.offsetY;
@@ -151,38 +158,8 @@ export default {
           floatingBall.style.top = `${y}px`;
         }
       });
-      floatingBall.addEventListener("mouseup", () => {
+      document.addEventListener("mouseup", () => {
         this.isDragging = false;
-        floatingBall.classList.remove("dragging");
-      });
-
-      // 触摸事件
-      floatingBall.addEventListener("touchstart", (e) => {
-        this.isDragging = true;
-        this.offsetX = e.touches[0].clientX - floatingBall.offsetLeft;
-        this.offsetY = e.touches[0].clientY - floatingBall.offsetTop;
-        floatingBall.classList.add("dragging");
-      });
-      floatingBall.addEventListener("touchmove", (e) => {
-        if (this.isDragging) {
-          let x = e.touches[0].clientX - this.offsetX;
-          let y = e.touches[0].clientY - this.offsetY;
-
-          const ballWidth = floatingBall.offsetWidth;
-          const ballHeight = floatingBall.offsetHeight;
-          const windowWidth = window.innerWidth;
-          const windowHeight = window.innerHeight;
-
-          x = Math.max(0, Math.min(x, windowWidth - ballWidth));
-          y = Math.max(0, Math.min(y, windowHeight - ballHeight));
-
-          floatingBall.style.left = `${x}px`;
-          floatingBall.style.top = `${y}px`;
-        }
-      });
-      floatingBall.addEventListener("touchend", () => {
-        this.isDragging = false;
-        floatingBall.classList.remove("dragging");
       });
     },
     // 保存对话
@@ -273,7 +250,10 @@ export default {
     opacity: 1;
   }
 }
-
+.deepSeek {
+  width: 100%;
+  height: 100%;
+}
 .chat-container {
   display: flex;
   align-items: flex-start;
@@ -458,16 +438,12 @@ export default {
   position: absolute;
   width: 60px;
   height: 60px;
-  background-color: #42b983;
-  color: white;
+  background: url("../../assets/deepSeek.jpg") no-repeat 0 0 / cover;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   user-select: none;
   transition: opacity 0.3s, transform 0.3s;
+  cursor: pointer;
   z-index: 999999;
 }
 #floating-ball.dragging {
