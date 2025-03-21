@@ -1,5 +1,8 @@
 <template>
   <div class="chat-container">
+    <div id="floating-ball">
+      <span>悬浮球</span>
+    </div>
     <div class="function-panel">
       <div class="new-dialogue" @click="newDialogue">
         <span class="el-icon el-icon-chat-dot-round"></span>
@@ -65,20 +68,7 @@
         <div class="operate">
           <div style="display: flex">
             <i class="el-icon el-icon-picture-outline"></i>
-            <el-upload
-              class="upload-demo"
-              action="http://api.deepseek.com/v1/file/recognize"
-              :headers="uploadHeaders"
-              :on-preview="handlePreview"
-              :on-remove="handleRemove"
-              :before-remove="beforeRemove"
-              multiple
-              :limit="3"
-              :on-exceed="handleExceed"
-              :file-list="fileList"
-            >
-              <i class="el-icon el-icon-paperclip"></i>
-            </el-upload>
+            <i class="el-icon el-icon-paperclip"></i>
           </div>
           <el-button
             slot="append"
@@ -105,11 +95,9 @@ export default {
       histories: [],
       loading: false,
       openai: null,
-      fileList: [],
-      uploadHeaders: {
-        Authorization: "Bearer sk-8bf0406f418d4f45bfc6483a6a3aca14", // 认证信息
-        "Content-Type": "application/json",
-      },
+      isDragging: false,
+      offsetX: null,
+      offsetY: null,
     };
   },
   watch: {
@@ -131,22 +119,71 @@ export default {
       dangerouslyAllowBrowser: true, // 允许在浏览器环境中使用OpenAI
     });
   },
+  mounted() {
+    this.setFloatingBallEvent();
+  },
   methods: {
-    handleRemove(file, fileList) {
-      console.log(file, fileList);
-    },
-    handlePreview(file) {
-      console.log(file);
-    },
-    handleExceed(files, fileList) {
-      this.$message.warning(
-        `当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${
-          files.length + fileList.length
-        } 个文件`
-      );
-    },
-    beforeRemove(file, fileList) {
-      return this.$confirm(`确定移除 ${file.name}？`);
+    // 设置悬浮球
+    setFloatingBallEvent() {
+      const floatingBall = document.getElementById("floating-ball");
+      // 鼠标事件
+      floatingBall.addEventListener("mousedown", (e) => {
+        this.isDragging = true;
+        this.offsetX = e.clientX - floatingBall.offsetLeft;
+        this.offsetY = e.clientY - floatingBall.offsetTop;
+        floatingBall.classList.add("dragging");
+      });
+
+      floatingBall.addEventListener("mousemove", (e) => {
+        if (this.isDragging) {
+          let x = e.clientX - this.offsetX;
+          let y = e.clientY - this.offsetY;
+
+          const ballWidth = floatingBall.offsetWidth;
+          const ballHeight = floatingBall.offsetHeight;
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+
+          x = Math.max(0, Math.min(x, windowWidth - ballWidth));
+          y = Math.max(0, Math.min(y, windowHeight - ballHeight));
+
+          floatingBall.style.left = `${x}px`;
+          floatingBall.style.top = `${y}px`;
+        }
+      });
+      floatingBall.addEventListener("mouseup", () => {
+        this.isDragging = false;
+        floatingBall.classList.remove("dragging");
+      });
+
+      // 触摸事件
+      floatingBall.addEventListener("touchstart", (e) => {
+        this.isDragging = true;
+        this.offsetX = e.touches[0].clientX - floatingBall.offsetLeft;
+        this.offsetY = e.touches[0].clientY - floatingBall.offsetTop;
+        floatingBall.classList.add("dragging");
+      });
+      floatingBall.addEventListener("touchmove", (e) => {
+        if (this.isDragging) {
+          let x = e.touches[0].clientX - this.offsetX;
+          let y = e.touches[0].clientY - this.offsetY;
+
+          const ballWidth = floatingBall.offsetWidth;
+          const ballHeight = floatingBall.offsetHeight;
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+
+          x = Math.max(0, Math.min(x, windowWidth - ballWidth));
+          y = Math.max(0, Math.min(y, windowHeight - ballHeight));
+
+          floatingBall.style.left = `${x}px`;
+          floatingBall.style.top = `${y}px`;
+        }
+      });
+      floatingBall.addEventListener("touchend", () => {
+        this.isDragging = false;
+        floatingBall.classList.remove("dragging");
+      });
     },
     // 保存对话
     saveHistory() {
@@ -415,5 +452,26 @@ export default {
       }
     }
   }
+}
+
+#floating-ball {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background-color: #42b983;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  user-select: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 999999;
+}
+#floating-ball.dragging {
+  opacity: 0.8;
+  transform: scale(1.1);
 }
 </style>
