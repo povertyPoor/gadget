@@ -1,7 +1,10 @@
 <template>
   <div class="deepSeek">
     <div id="floating-ball"></div>
-    <div class="chat-container">
+    <div v-if="chatShow" class="chat-container">
+      <div class="close" @click="chatShow = false">
+        <i class="el-icon-close"></i>
+      </div>
       <div class="function-panel">
         <div class="new-dialogue" @click="newDialogue">
           <span class="el-icon el-icon-chat-dot-round"></span>
@@ -90,6 +93,7 @@ import marked from "marked";
 export default {
   data() {
     return {
+      chatShow: false,
       inputMessage: "",
       messages: [],
       histories: [],
@@ -127,6 +131,9 @@ export default {
     setFloatingBallEvent() {
       const floatingBall = document.getElementById("floating-ball");
       // 鼠标事件
+      floatingBall.addEventListener("dblclick", (e) => {
+        this.chatShow = true;
+      });
       floatingBall.addEventListener("mousedown", (e) => {
         this.isDragging = true;
         this.offsetX = e.clientX - floatingBall.offsetLeft;
@@ -266,6 +273,12 @@ export default {
   border-radius: 24px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 
+  .close {
+    position: absolute;
+    right: 20px;
+    font-size: 20px;
+    cursor: pointer;
+  }
   .function-panel {
     height: 690px;
     width: 200px;
