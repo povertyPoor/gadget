@@ -113,7 +113,7 @@ export default {
           const container = this.$el.querySelector(".chat-window");
           if (
             container.clientHeight + Number(container.scrollTop.toFixed(0)) >=
-            container.scrollHeight - 5
+            container.scrollHeight - 60
           ) {
             container.scrollTop = container.scrollHeight;
           }
@@ -210,9 +210,11 @@ export default {
         role: "user",
         content: this.inputMessage,
       });
-      // 发送新对话时，滚动到最低部
-      const container = this.$el.querySelector(".chat-window");
-      container.scrollTop = container.scrollHeight;
+      this.$nextTick(() => {
+        // 发送新对话时，滚动到最低部
+        const container = document.querySelector(".chat-window");
+        container.scrollTop = container.scrollHeight;
+      })
 
       this.inputMessage = "";
       this.loading = true;
