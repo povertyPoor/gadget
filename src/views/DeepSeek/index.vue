@@ -37,14 +37,14 @@
                 class="message-content"
                 :id="'markdown-content-' + index"
               ></div>
-              <span
+              <!-- <span
                 v-if="
                   msg.role === 'assistant' &&
                   loading &&
                   index === messages.length - 1
                 "
                 class="cursor"
-              ></span>
+              ></span> -->
             </div>
             <div v-else class="message-content">
               {{ msg.content }}
@@ -90,6 +90,7 @@
 <script>
 import OpenAI from "openai";
 import marked from "marked";
+import axios from "axios";
 export default {
   data() {
     return {
@@ -102,6 +103,7 @@ export default {
       isDragging: false, // 鼠标是否点击悬浮球
       offsetX: null,
       offsetY: null,
+      marked: null,
     };
   },
   watch: {
@@ -116,12 +118,13 @@ export default {
     },
   },
   created() {
-    this.openai = new OpenAI({
-      baseURL:
-        process.env.VUE_APP_DEEPSEEK_API_URL || "https://api.deepseek.com",
-      apiKey: process.env.VUE_APP_DEEPSEEK_API_KEY,
-      dangerouslyAllowBrowser: true, // 允许在浏览器环境中使用OpenAI
-    });
+    this.marked = marked;
+    // this.openai = new OpenAI({
+    //   baseURL:
+    //     process.env.VUE_APP_DEEPSEEK_API_URL || "https://api.deepseek.com",
+    //   apiKey: process.env.VUE_APP_DEEPSEEK_API_KEY,
+    //   dangerouslyAllowBrowser: true, // 允许在浏览器环境中使用OpenAI
+    // });
   },
   mounted() {
     this.setFloatingBallEvent();
@@ -208,32 +211,94 @@ export default {
       this.loading = true;
 
       try {
-        const completion = await this.openai.chat.completions.create({
-          messages: [
-            ...this.messages.map((msg) => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-          ],
-          model: "deepseek-chat",
-          stream: true,
-        });
+        // const completion = await this.openai.chat.completions.create({
+        //   messages: [
+        //     ...this.messages.map((msg) => ({
+        //       role: msg.role,
+        //       content: msg.content,
+        //     })),
+        //   ],
+        //   model: "deepseek-chat",
+        //   stream: true,
+        // });
+
+        // let assistantMessage = "";
+        // this.messages.push({
+        //   role: "assistant",
+        //   content: "",
+        // });
+
+        // for await (const chunk of completion) {
+        //   const content = chunk.choices[0]?.delta?.content || "";
+        //   assistantMessage += content;
+        //   this.messages[this.messages.length - 1].content = assistantMessage;
+        //   const htmlContent = marked.parse(assistantMessage);
+        //   document.getElementById(
+        //     `markdown-content-${this.messages.length - 1}`
+        //   ).innerHTML = htmlContent;
+        // }
+
+        const that = this;
+        const response = await fetch(
+          process.env.VUE_APP_DEEPSEEK_API_URL_completions,
+          {
+            method: "post",
+            body: JSON.stringify({
+              model: "deepseek-chat",
+              messages: [
+                ...this.messages.map((msg) => ({
+                  role: msg.role,
+                  content: msg.content,
+                })),
+              ],
+              stream: true,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.VUE_APP_DEEPSEEK_API_KEY}`,
+            },
+            responseType: "stream",
+          }
+        );
+        // 用来获取一个可读的流的读取器（Reader）以流的方式处理响应体数据
+        const reader = response.body.getReader();
 
         let assistantMessage = "";
         this.messages.push({
           role: "assistant",
           content: "",
         });
-
-        for await (const chunk of completion) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          assistantMessage += content;
-          this.messages[this.messages.length - 1].content = assistantMessage;
-          const htmlContent = marked.parse(assistantMessage);
-          document.getElementById(
-            `markdown-content-${this.messages.length - 1}`
-          ).innerHTML = htmlContent;
-        }
+        const read = async () => {
+          const { done, value } = await reader.read();
+          if (done) return;
+          // 将流中的字节数据解码为文本字符串
+          const textDecoder = new TextDecoder();
+          const completion = textDecoder.decode(value);
+          // 截取流数据
+          const lines = completion.toString().split("\n");
+          for await (const line of lines) {
+            // 使用开头为"data: "的数据
+            if (line.startsWith("data: ")) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                if (json.choices[0]?.delta?.content) {
+                  const content = json.choices[0].delta.content;
+                  assistantMessage += content;
+                  that.messages[that.messages.length - 1].content =
+                    assistantMessage;
+                  const htmlContent = that.marked.parse(assistantMessage);
+                  document.getElementById(
+                    `markdown-content-${that.messages.length - 1}`
+                  ).innerHTML = htmlContent;
+                }
+              } catch (e) {
+                continue;
+              }
+            }
+          }
+          read();
+        };
+        read();
       } catch (error) {
         this.$message.error("请求失败：" + error.message);
       } finally {
