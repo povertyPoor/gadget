@@ -111,7 +111,12 @@ export default {
       handler() {
         this.$nextTick(() => {
           const container = this.$el.querySelector(".chat-window");
-          container.scrollTop = container.scrollHeight;
+          if (
+            container.clientHeight + Number(container.scrollTop.toFixed(0)) >=
+            container.scrollHeight - 5
+          ) {
+            container.scrollTop = container.scrollHeight;
+          }
         });
       },
       deep: true,
@@ -201,11 +206,13 @@ export default {
     },
     async sendMessage() {
       if (!this.inputMessage.trim()) return;
-
       this.messages.push({
         role: "user",
         content: this.inputMessage,
       });
+      // 发送新对话时，滚动到最低部
+      const container = this.$el.querySelector(".chat-window");
+      container.scrollTop = container.scrollHeight;
 
       this.inputMessage = "";
       this.loading = true;
@@ -269,8 +276,10 @@ export default {
           content: "",
         });
         const read = async () => {
+          // 获取流的读取器
           const { done, value } = await reader.read();
-          if (done) return;
+          // 获取流的读取器
+          if (done) return; // 是否读取完成
           // 将流中的字节数据解码为文本字符串
           const textDecoder = new TextDecoder();
           const completion = textDecoder.decode(value);
