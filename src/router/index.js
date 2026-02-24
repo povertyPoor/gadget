@@ -53,6 +53,30 @@ export const constantRoutes = [
         meta: { title: 'DeepSeek' }
       }
     ]
+  },
+  {
+    path: '/screenshot',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'screenshot',
+        component: () => import('@/views/screenshot/index'),
+        meta: { title: 'screenshot' }
+      }
+    ]
+  },
+  {
+    path: '/CodeBuddy',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'CodeBuddy',
+        component: () => import('@/views/CodeBuddy/index'),
+        meta: { title: 'CodeBuddy' }
+      }
+    ]
   }
 ]
 

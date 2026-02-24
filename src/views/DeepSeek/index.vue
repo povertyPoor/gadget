@@ -69,8 +69,13 @@
           </el-input>
           <div class="operate">
             <div style="display: flex">
-              <i class="el-icon el-icon-picture-outline"></i>
-              <i class="el-icon el-icon-paperclip"></i>
+              <img src="@/assets/imageUpload.png" alt="" />
+              <img src="@/assets/fileUpload.png" alt="" />
+              <img
+                src="@/assets/screenshot.png"
+                alt=""
+                @click="startScreenshot"
+              />
             </div>
             <el-button
               slot="append"
@@ -84,13 +89,28 @@
         </div>
       </div>
     </div>
+    <div class="mask" v-show="isSelecting">
+      <div
+        class="selection-box"
+        v-show="isSelecting"
+        :style="{
+          left: selectionBox.left + 'px',
+          top: selectionBox.top + 'px',
+          width: selectionBox.width + 'px',
+          height: selectionBox.height + 'px',
+        }"
+      ></div>
+    </div>
+    <div class="result" v-if="capturedImage">
+      <h3>截图结果：</h3>
+      <img :src="capturedImage" alt="截图" />
+    </div>
   </div>
 </template>
 
 <script>
-import OpenAI from "openai";
 import marked from "marked";
-import axios from "axios";
+import html2canvas from "html2canvas";
 export default {
   data() {
     return {
@@ -104,6 +124,16 @@ export default {
       offsetX: null,
       offsetY: null,
       marked: null,
+      isSelecting: false,
+      isScreenshotShow: false,
+      startX: 0,
+      startY: 0,
+      selectionBox: {
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+      },
     };
   },
   watch: {
@@ -172,9 +202,50 @@ export default {
           floatingBall.style.left = `${x}px`;
           floatingBall.style.top = `${y}px`;
         }
+        if (this.isScreenshotShow) {
+          const currentX = e.clientX;
+          const currentY = e.clientY;
+          // const currentX =
+          //   e.clientX -
+          //   document.querySelector(".deepSeek").getBoundingClientRect().left;
+          // const currentY =
+          //   e.clientY -
+          //   document.querySelector(".deepSeek").getBoundingClientRect().top;
+
+          this.selectionBox = {
+            left: Math.min(this.startX, currentX),
+            top: Math.min(this.startY, currentY),
+            width: Math.abs(currentX - this.startX),
+            height: Math.abs(currentY - this.startY),
+          };
+        }
       });
       document.addEventListener("mouseup", () => {
         this.isDragging = false;
+        this.isSelecting = false;
+        this.isScreenshotShow = false;
+        document.body.style.cursor = "default";
+      });
+      document.addEventListener("mousedown", (e) => {
+        if (this.isSelecting) {
+          this.isScreenshotShow = true;
+          this.startX = e.clientX;
+          this.startY = e.clientY;
+
+          // this.startX =
+          //   e.clientX -
+          //   document.querySelector(".deepSeek").getBoundingClientRect().left;
+          // this.startY =
+          //   e.clientY -
+          //   document.querySelector(".deepSeek").getBoundingClientRect().top;
+
+          this.selectionBox = {
+            left: this.startX,
+            top: this.startY,
+            width: 0,
+            height: 0,
+          };
+        }
       });
     },
     // 保存对话
@@ -214,7 +285,7 @@ export default {
         // 发送新对话时，滚动到最低部
         const container = document.querySelector(".chat-window");
         container.scrollTop = container.scrollHeight;
-      })
+      });
 
       this.inputMessage = "";
       this.loading = true;
@@ -316,6 +387,31 @@ export default {
         this.loading = false;
         this.saveHistory();
       }
+    },
+    startScreenshot() {
+      this.isSelecting = true;
+      document.body.style.cursor = "crosshair";
+      this.startX = 0;
+      this.startY = 0;
+      this.selectionBox = {
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+      };
+    },
+    // 截图
+    screenshot() {
+      const that = this;
+      html2canvas(document.body).then(function (canvas) {
+        that.downloadImage(canvas);
+      });
+    },
+    downloadImage(canvas) {
+      const link = document.createElement("a");
+      link.download = "screenshot.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
     },
   },
 };
@@ -465,7 +561,7 @@ export default {
   }
 
   ::v-deep .input-area {
-    background-color: rgb(243, 244, 246);
+    background-color: #7e889c;
     box-shadow: 0px 0px 0px 0.5px #dce0e9;
     border-radius: 24px;
     .el-textarea__inner {
@@ -484,8 +580,9 @@ export default {
       justify-content: space-between;
       padding: 5px 15px;
       font-size: 22px;
-      .el-icon {
+      img {
         margin: 0 5px;
+        width: 30px;
         cursor: pointer;
       }
       .el-button {
@@ -521,6 +618,33 @@ export default {
       }
     }
   }
+}
+.mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(101 101 101 / 50%);
+  z-index: 3000;
+}
+.selection-box {
+  position: absolute;
+  border: 2px dashed #3498db;
+  background-color: rgba(52, 152, 219, 0.2);
+  z-index: 3100;
+}
+
+.result {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #eee;
+}
+
+.result img {
+  max-width: 100%;
+  margin-top: 10px;
+  border: 1px solid #ddd;
 }
 
 #floating-ball {
